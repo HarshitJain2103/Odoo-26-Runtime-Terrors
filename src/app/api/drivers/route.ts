@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get("search") ?? "";
   const status = searchParams.get("status") ?? "";
   const region = searchParams.get("region") ?? "";
+  const validLicense = searchParams.get("validLicense") === "true";
   const sort = searchParams.get("sort") ?? "createdAt";
   const order = (searchParams.get("order") ?? "desc") as "asc" | "desc";
 
@@ -27,6 +28,8 @@ export async function GET(req: NextRequest) {
     }),
     ...(status && { status: status as Prisma.EnumDriverStatusFilter }),
     ...(region && { region }),
+    // Rule 3: only show drivers with non-expired licenses when used in trip form
+    ...(validLicense && { licenseExpiry: { gt: new Date() } }),
   };
 
   const validSortFields: Record<string, boolean> = {
