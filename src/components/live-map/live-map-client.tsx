@@ -10,7 +10,7 @@ const iconUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
 const iconRetinaUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png";
 const shadowUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png";
 
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, GeoJSON, useMap } from "react-leaflet";
 
 interface LiveTrip {
   id: string;
@@ -24,7 +24,7 @@ interface LiveTrip {
   routeGeoJson: any;
   cargoWeightKg: number;
   vehicle: { regNo: string; name: string };
-  driver: { name: string };
+  driver: { name: string; safetyScore: number };
 }
 
 // A sub-component to auto-fit the map to all routes
@@ -129,8 +129,23 @@ export default function LiveMapClient() {
               {trip.routeGeoJson && (
                 <GeoJSON
                   data={trip.routeGeoJson}
-                  pathOptions={{ color: "#714b67", weight: 4, opacity: 0.8 }}
-                />
+                  pathOptions={{ color: "#714b67", weight: 5, opacity: 0.8 }}
+                >
+                  <Tooltip sticky className="bg-white/95 backdrop-blur shadow border-none rounded-lg p-2 min-w-[200px]">
+                    <strong className="block text-sm mb-1">{trip.source} &rarr; {trip.destination}</strong>
+                    <div className="space-y-0.5 text-xs text-gray-600">
+                      <div><span className="font-semibold text-gray-900">Vehicle:</span> {trip.vehicle.name} ({trip.vehicle.regNo})</div>
+                      <div><span className="font-semibold text-gray-900">Driver:</span> {trip.driver.name}</div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold text-gray-900">Safety Score:</span> 
+                        <span className={trip.driver.safetyScore >= 80 ? "text-green-600 font-bold" : "text-amber-600 font-bold"}>
+                          {trip.driver.safetyScore}/100
+                        </span>
+                      </div>
+                      <div><span className="font-semibold text-gray-900">Load:</span> {trip.cargoWeightKg} kg</div>
+                    </div>
+                  </Tooltip>
+                </GeoJSON>
               )}
 
               {/* Source Marker */}
@@ -156,6 +171,7 @@ export default function LiveMapClient() {
                     <div className="space-y-1 text-xs">
                       <div className="flex justify-between"><span className="text-gray-500">Vehicle:</span> <span className="font-medium">{trip.vehicle.regNo}</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Driver:</span> <span className="font-medium">{trip.driver.name}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Safety:</span> <span className="font-medium">{trip.driver.safetyScore}/100</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Cargo:</span> <span className="font-medium">{trip.cargoWeightKg} kg</span></div>
                     </div>
                   </div>

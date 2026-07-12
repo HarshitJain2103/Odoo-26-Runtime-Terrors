@@ -29,23 +29,19 @@ export async function POST(
         throw new Error("Only DRAFT or DISPATCHED trips can be cancelled");
       }
 
-      const [updatedTrip] = await Promise.all([
-        tx.trip.update({
-          where: { id: tripId },
-          data: { status: "CANCELLED", cancelledAt: new Date() },
-          include: {
-            vehicle: { select: { id: true, regNo: true, name: true } },
-            driver: { select: { id: true, name: true } },
-          },
-        }),
-        // Only restore vehicle + driver if they were set to ON_TRIP
-        ...(trip.status === "DISPATCHED"
-          ? [
-              tx.vehicle.update({ where: { id: trip.vehicleId }, data: { status: "AVAILABLE" } }),
-              tx.driver.update({ where: { id: trip.driverId }, data: { status: "AVAILABLE" } }),
-            ]
-          : []),
-      ]);
+      const updatedTrip = await tx.trip.update({
+        where: { id: tripId },
+        data: { status: "CANCELLED", cancelledAt: new Date() },
+        include: {
+          vehicle: { select: { id: true, regNo: true, name: true } },
+          driver: { select: { id: true, name: true } },
+        },
+      });
+
+      if (trip.status === "DISPATCHED") {
+        await tx.vehicle.update({ where: { id: trip.vehicleId }, data: { status: "AVAILABLE" } });
+        await tx.driver.update({ where: { id: trip.driverId }, data: { status: "AVAILABLE" } });
+      }
 
       // Audit log
       const userId = (session.user as { id: string }).id;
@@ -61,7 +57,7 @@ export async function POST(
       });
 
       return updatedTrip;
-    });
+    }, { maxWait: 5000, timeout: 20000 });
 
     return NextResponse.json({ trip: result });
   } catch (err) {

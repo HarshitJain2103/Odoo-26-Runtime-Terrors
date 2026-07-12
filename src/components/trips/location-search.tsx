@@ -120,7 +120,10 @@ export function LocationSearch({ label, placeholder, value, onChange, error }: L
               type="button"
               className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-start gap-2 border-b last:border-0 transition-colors"
               style={{ borderColor: "var(--color-border)" }}
-              onClick={() => handleSelect(result)}
+              onMouseDown={(e) => {
+                e.preventDefault(); // Prevents input onBlur from firing
+                handleSelect(result);
+              }}
             >
               <MapPin size={16} className="text-gray-400 mt-0.5 shrink-0" />
               <span className="text-gray-700">{result.display_name}</span>

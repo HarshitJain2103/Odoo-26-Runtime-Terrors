@@ -38,13 +38,14 @@ export async function GET() {
         driver: {
           select: {
             name: true,
+            safetyScore: true,
           }
         }
       }
     });
 
     // Filter out trips without routeGeoJson
-    const tripsWithGeoJson = activeTrips.filter(t => t.routeGeoJson);
+    const tripsWithGeoJson = activeTrips.filter((t: any) => t.routeGeoJson);
 
     return NextResponse.json({ trips: tripsWithGeoJson });
   } catch (error) {
