@@ -45,7 +45,7 @@ export async function GET() {
     });
 
     // Filter out trips without routeGeoJson
-    const tripsWithGeoJson = activeTrips.filter((t: { routeGeoJson: unknown }) => t.routeGeoJson);
+    const tripsWithGeoJson = activeTrips.filter((t) => t.routeGeoJson);
 
     return NextResponse.json({ trips: tripsWithGeoJson });
   } catch (error) {

@@ -138,7 +138,7 @@ export function VehicleForm({ vehicle, onClose, onSuccess }: VehicleFormProps) {
             )}
 
             {/* Row 1: Reg No + Name */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="form-label">
                   Registration No <span className="text-red-500">*</span>
@@ -170,7 +170,7 @@ export function VehicleForm({ vehicle, onClose, onSuccess }: VehicleFormProps) {
             </div>
 
             {/* Row 2: Type + Region */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="form-label">
                   Vehicle Type <span className="text-red-500">*</span>
@@ -202,7 +202,7 @@ export function VehicleForm({ vehicle, onClose, onSuccess }: VehicleFormProps) {
             </div>
 
             {/* Row 3: Capacity + Odometer */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="form-label">
                   Capacity (kg) <span className="text-red-500">*</span>

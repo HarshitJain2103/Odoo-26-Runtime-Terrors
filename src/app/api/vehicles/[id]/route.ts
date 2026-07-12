@@ -23,6 +23,7 @@ export async function PATCH(
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, ...data } = parsed.data;
 
   // If changing regNo, check uniqueness against other vehicles

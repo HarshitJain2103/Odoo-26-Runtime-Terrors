@@ -50,8 +50,7 @@ export default function LiveMapClient() {
 
   // Setup Leaflet icons on the client
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    delete (L.Icon.Default.prototype as { _getIconUrl?: string })._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: iconRetinaUrl,
       iconUrl: iconUrl,

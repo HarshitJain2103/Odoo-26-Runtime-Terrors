@@ -174,7 +174,7 @@ export function TripForm({ onClose, onSuccess }: TripFormProps) {
             )}
 
             {/* Source + Destination */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <LocationSearch
                 label="Source *"
                 placeholder="Search starting point..."

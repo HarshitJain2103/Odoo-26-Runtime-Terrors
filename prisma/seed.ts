@@ -2,7 +2,7 @@ import { prisma } from "../src/lib/prisma";
 import bcrypt from "bcryptjs";
 
 const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
-const randomChoice = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const randomChoice = <T>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 // Predefined routes for realistic map generation

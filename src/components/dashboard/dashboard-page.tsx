@@ -114,11 +114,11 @@ export function DashboardPage({ userName, userRole }: { userName: string; userRo
       {/* Welcome banner */}
       <div className="rounded-2xl p-6 relative overflow-hidden"
         style={{ background: "linear-gradient(135deg, #714b67 0%, #2d2845 100%)" }}>
-        <div className="relative z-10">
+        <div className="relative z-10 pr-24">
           <p className="text-sm font-medium mb-1" style={{ color: "rgba(255,255,255,0.6)" }}>{userRole}</p>
-          <h2 className="text-2xl font-bold text-white mb-1">Welcome back, {firstName} 👋</h2>
+          <h2 className="text-2xl font-bold text-white mb-1">Welcome back, {firstName}</h2>
           <p style={{ color: "rgba(255,255,255,0.5)" }} className="text-sm">
-            {"Here's"} your fleet overview for today.
+            Here&apos;s your fleet overview for today.
           </p>
         </div>
         <div className="absolute -right-6 -top-6 w-36 h-36 rounded-full opacity-10" style={{ background: "white" }} />
@@ -181,7 +181,7 @@ export function DashboardPage({ userName, userRole }: { userName: string; userRo
 
       {/* 7 KPI Cards */}
       {loading || !kpis ? <KpiGridSkeleton /> : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <KpiCard label="Active Vehicles" value={kpis.activeVehicles} sub="Currently on trip"
             icon={Truck} iconColor="#3b82f6" iconBg="#eff6ff" />
           <KpiCard label="Available Vehicles" value={kpis.availableVehicles} sub="Ready to dispatch"

@@ -102,7 +102,7 @@ export function CompleteTripForm({ tripId, tripCode, onClose, onSuccess }: Compl
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="form-label">Actual Distance (km) <span className="text-red-500">*</span></label>
                 <input type="number" min="1"
@@ -125,7 +125,7 @@ export function CompleteTripForm({ tripId, tripCode, onClose, onSuccess }: Compl
             {/* Fuel section */}
             <div className="rounded-lg p-4 space-y-3" style={{ background: "var(--color-surface-alt)", border: "1px solid var(--color-border)" }}>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fuel Log (optional)</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="form-label">Fuel Consumed (L)</label>
                   <input type="number" min="0" step="0.1"

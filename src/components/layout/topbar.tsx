@@ -12,7 +12,7 @@ interface TopbarProps {
   userRole: UserRole;
 }
 
-export function Topbar({ userName, userEmail, userRole }: TopbarProps) {
+export function Topbar({ userName, userRole }: TopbarProps) {
   const pathname = usePathname();
 
   // Derive page title from pathname

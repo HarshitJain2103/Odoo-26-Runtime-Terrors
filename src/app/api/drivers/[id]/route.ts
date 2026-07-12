@@ -23,6 +23,7 @@ export async function PATCH(
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, licenseExpiry, ...rest } = parsed.data;
   const data = {
     ...rest,

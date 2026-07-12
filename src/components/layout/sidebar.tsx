@@ -17,7 +17,7 @@ import {
   Map,
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
-import { NAV_ITEMS, ROLE_LABELS, type UserRole } from "@/lib/constants";
+import { NAV_ITEMS, type UserRole } from "@/lib/constants";
 import { canView } from "@/lib/rbac";
 import { useState } from "react";
 
@@ -104,6 +104,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               title={collapsed ? item.label : undefined}
               className={cn(
                 "sidebar-link group relative",

@@ -27,7 +27,7 @@ export default async function DashboardLayout({
     <SessionProvider session={session}>
       <div className="flex h-screen overflow-hidden" style={{ background: "var(--color-surface-alt)" }}>
         {/* Spacer for fixed sidebar */}
-        <div className="w-16 flex-shrink-0 transition-all duration-300 hidden sm:block" />
+        <div className="w-16 flex-shrink-0 transition-all duration-300" />
         
         {/* Sidebar */}
         <Sidebar />
