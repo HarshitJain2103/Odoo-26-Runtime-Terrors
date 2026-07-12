@@ -1,103 +1,96 @@
-import Image from "next/image";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function RootPage() {
+  const session = await auth();
+
+  // Not logged in → middleware already handles this, but belt-and-suspenders
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  // Logged in → will redirect to (dashboard)/page.tsx once Phase 2 is built.
+  // For now, show a simple "auth works" confirmation.
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #1e1b2e 0%, #2d2845 40%, #714b67 100%)",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          background: "rgba(255,255,255,0.97)",
+          borderRadius: "1rem",
+          padding: "2.5rem 3rem",
+          maxWidth: "420px",
+          width: "100%",
+          textAlign: "center",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+        }}
+      >
+        {/* Logo */}
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: "0.75rem",
+            background: "linear-gradient(135deg, #714b67, #00a09d)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 1rem",
+          }}
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 3h15v13H1z" />
+            <path d="M16 8h4l3 3v5h-7V8z" />
+            <circle cx="5.5" cy="18.5" r="2.5" />
+            <circle cx="18.5" cy="18.5" r="2.5" />
+          </svg>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Success indicator */}
+        <div style={{ color: "#16a34a", marginBottom: "0.75rem" }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ margin: "0 auto" }}>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+        </div>
+
+        <h1 style={{ fontSize: "1.375rem", fontWeight: 700, color: "#1e293b", margin: "0 0 0.25rem" }}>
+          Authentication Working!
+        </h1>
+        <p style={{ color: "#64748b", fontSize: "0.875rem", margin: "0 0 1.5rem" }}>
+          Signed in as <strong>{session.user.email}</strong>
+        </p>
+
+        {/* Session info */}
+        <div style={{ background: "#f8fafc", borderRadius: "0.625rem", padding: "1rem", textAlign: "left", fontSize: "0.8125rem", color: "#475569", border: "1px solid #e2e8f0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "0.25rem 0", borderBottom: "1px solid #e2e8f0", marginBottom: "0.25rem" }}>
+            <span style={{ color: "#94a3b8" }}>Name</span>
+            <span style={{ fontWeight: 500 }}>{session.user.name}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "0.25rem 0", borderBottom: "1px solid #e2e8f0", marginBottom: "0.25rem" }}>
+            <span style={{ color: "#94a3b8" }}>Role</span>
+            <span style={{ fontWeight: 500, color: "#714b67" }}>
+              {(session.user as { role?: string }).role ?? "—"}
+            </span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "0.25rem 0" }}>
+            <span style={{ color: "#94a3b8" }}>Session</span>
+            <span style={{ fontWeight: 500, color: "#16a34a" }}>Active ✓</span>
+          </div>
+        </div>
+
+        <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "1.25rem" }}>
+          Dashboard UI coming in Phase 2 →
+        </p>
+      </div>
     </div>
   );
 }
