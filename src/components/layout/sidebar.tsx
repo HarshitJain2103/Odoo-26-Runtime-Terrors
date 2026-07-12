@@ -16,7 +16,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
-import { NAV_ITEMS } from "@/lib/constants";
+import { NAV_ITEMS, ROLE_LABELS } from "@/lib/constants";
 import { canView } from "@/lib/rbac";
 import type { UserRole } from "@prisma/client";
 import { useState } from "react";
@@ -81,10 +81,7 @@ export function Sidebar() {
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const IconComponent = ICON_MAP[item.icon as IconName];
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+          const isActive = pathname.startsWith(item.href);
 
           // RBAC: hide nav items the user cannot view
           if (role && !canView(role, item.module)) return null;

@@ -76,7 +76,7 @@ export const RBAC_MATRIX: Record<UserRole, Record<string, AccessLevel>> = {
 // ─────────────────────────────────────────────
 
 export const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: "LayoutDashboard", module: "dashboard" },
+  { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard", module: "dashboard" },
   { href: "/vehicles", label: "Vehicles", icon: "Truck", module: "vehicles" },
   { href: "/drivers", label: "Drivers", icon: "Users", module: "drivers" },
   { href: "/trips", label: "Trips", icon: "Route", module: "trips" },

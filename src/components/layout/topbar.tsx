@@ -18,7 +18,7 @@ export function Topbar({ userName, userEmail, userRole }: TopbarProps) {
 
   // Derive page title from pathname
   const currentNav = NAV_ITEMS.find((item) =>
-    item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
+    pathname.startsWith(item.href)
   );
   const pageTitle = currentNav?.label ?? "TransitOps";
 
