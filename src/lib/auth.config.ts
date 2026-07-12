@@ -7,13 +7,15 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnLogin = nextUrl.pathname.startsWith("/login");
+      const isOnLogin = nextUrl.pathname === "/login";
 
       if (isOnLogin) {
-        if (isLoggedIn) return Response.redirect(new URL("/", nextUrl));
+        // Already logged in — redirect to dashboard
+        if (isLoggedIn) return Response.redirect(new URL("/dashboard", nextUrl));
         return true;
       }
 
+      // All other routes require auth
       if (!isLoggedIn) return false;
       return true;
     },
