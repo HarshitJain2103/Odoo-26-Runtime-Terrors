@@ -58,10 +58,19 @@ export async function GET() {
   const totalOperational = totalFuel + totalMaintenance + totalExpenses;
 
   // Per-vehicle breakdown
-  const breakdown = vehicles.map((v) => {
-    const fuel = v.fuelLogs.reduce((s, f) => s + Number(f.totalCost), 0);
-    const maintenance = v.maintenanceLogs.reduce((s, m) => s + Number(m.cost), 0);
-    const other = v.expenses.reduce((s, e) => s + Number(e.amount), 0);
+  const breakdown = vehicles.map((v: {
+    id: string;
+    regNo: string;
+    name: string;
+    type: string;
+    status: string;
+    fuelLogs: { totalCost: unknown }[];
+    maintenanceLogs: { cost: unknown }[];
+    expenses: { amount: unknown }[];
+  }) => {
+    const fuel = v.fuelLogs.reduce((s: number, f: { totalCost: unknown }) => s + Number(f.totalCost), 0);
+    const maintenance = v.maintenanceLogs.reduce((s: number, m: { cost: unknown }) => s + Number(m.cost), 0);
+    const other = v.expenses.reduce((s: number, e: { amount: unknown }) => s + Number(e.amount), 0);
     return {
       id: v.id,
       regNo: v.regNo,
@@ -73,7 +82,7 @@ export async function GET() {
       other,
       total: fuel + maintenance + other,
     };
-  }).sort((a, b) => b.total - a.total);
+  }).sort((a: { total: number }, b: { total: number }) => b.total - a.total);
 
   return NextResponse.json({
     summary: {
