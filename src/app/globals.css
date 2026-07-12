@@ -249,3 +249,41 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ─── Staggered entrance animations ──────────────────── */
+.animate-slide-up { animation: slideUp 0.4s ease-out both; }
+.delay-50  { animation-delay: 50ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-250 { animation-delay: 250ms; }
+.delay-300 { animation-delay: 300ms; }
+
+/* ─── Focus visible ring (accessibility) ─────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary-400);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ─── Responsive utility overrides ───────────────────── */
+@media (max-width: 768px) {
+  .kpi-card { padding: 1rem; }
+  .data-table thead th,
+  .data-table tbody td { padding: 0.625rem 0.75rem; }
+  .modal-content { margin: 1rem; }
+}
+
+/* ─── Page transition ─────────────────────────────────── */
+.page-enter { animation: fadeIn 0.25s ease-out; }
+
+/* ─── Toast / notification pulse ─────────────────────── */
+@keyframes pulse-once {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+.pulse-once { animation: pulse-once 0.3s ease-out; }

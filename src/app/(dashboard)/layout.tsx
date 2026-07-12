@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { SessionProvider } from "next-auth/react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import type { UserRole } from "@prisma/client";
+import { ROLE_LABELS } from "@/lib/constants";
 
 export default async function DashboardLayout({
   children,
@@ -20,7 +20,7 @@ export default async function DashboardLayout({
     id: string;
     name?: string | null;
     email?: string | null;
-    role: UserRole;
+    role: keyof typeof ROLE_LABELS;
   };
 
   return (
@@ -39,7 +39,7 @@ export default async function DashboardLayout({
           />
 
           {/* Page content */}
-          <main className="flex-1 overflow-y-auto p-6">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
             {children}
           </main>
         </div>

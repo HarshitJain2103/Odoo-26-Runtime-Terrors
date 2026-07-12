@@ -1,18 +1,33 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/dashboard
-// Returns all KPI aggregations + chart data + recent trips in one request
-export async function GET() {
+// GET /api/dashboard?vehicleType=TRUCK&tripStatus=COMPLETED&region=North
+// KPI counts are always global; recent trips table respects the filters
+export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const vehicleType = searchParams.get("vehicleType") ?? "";
+    const tripStatus  = searchParams.get("tripStatus")  ?? "";
+    const region      = searchParams.get("region")      ?? "";
+
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    // Build filter for recent trips
+    const tripWhere: Record<string, unknown> = {};
+    if (tripStatus) tripWhere.status = tripStatus;
+    if (vehicleType || region) {
+      tripWhere.vehicle = {
+        ...(vehicleType && { type: vehicleType }),
+        ...(region && { region }),
+      };
+    }
 
     const [
       vehicleCounts,
@@ -25,6 +40,7 @@ export async function GET() {
       prisma.driver.groupBy({ by: ["status"], _count: { status: true } }),
       prisma.trip.groupBy({ by: ["status"], _count: { status: true } }),
       prisma.trip.findMany({
+        where: tripWhere,
         take: 10,
         orderBy: { createdAt: "desc" },
         select: {

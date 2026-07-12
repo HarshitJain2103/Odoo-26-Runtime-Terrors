@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { completeTripSchema } from "@/lib/validations";
 
+// Tx type derived from prisma instance — avoids Prisma namespace import issues
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
 // POST /api/trips/[id]/complete
 // Transaction: complete trip → update odometer + restore vehicle + driver status
 export async function POST(
@@ -27,7 +30,7 @@ export async function POST(
   const { actualDistanceKm, revenue, completionNotes, fuelConsumed, fuelCostPerLiter, finalOdometer } = parsed.data;
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Tx) => {
       const trip = await tx.trip.findUniqueOrThrow({
         where: { id: tripId },
         include: { vehicle: true, driver: true },
@@ -77,6 +80,19 @@ export async function POST(
           },
         });
       }
+
+      // Audit log
+      const userId = (session.user as { id: string }).id;
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: "COMPLETE",
+          entity: "Trip",
+          entityId: tripId,
+          previousData: { status: "DISPATCHED" },
+          newData: { status: "COMPLETED", actualDistanceKm, revenue: revenue ?? null },
+        },
+      });
 
       return updatedTrip;
     });

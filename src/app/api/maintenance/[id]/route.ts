@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
+// Tx type derived from prisma instance — avoids Prisma namespace import issues
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
 const updateStatusSchema = z.object({
   status: z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED"]),
   completedDate: z.string().optional(),
@@ -33,7 +36,7 @@ export async function PATCH(
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Tx) => {
       const log = await tx.maintenanceLog.findUniqueOrThrow({
         where: { id },
         include: { vehicle: true },
@@ -71,6 +74,19 @@ export async function PATCH(
           ...(description !== undefined && { description }),
         },
         include: { vehicle: { select: { id: true, regNo: true, name: true } } },
+      });
+
+      // Audit log for status transitions
+      const userId = (session.user as { id: string }).id;
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: "MAINTENANCE_STATUS_UPDATE",
+          entity: "MaintenanceLog",
+          entityId: id,
+          previousData: { status: log.status },
+          newData: { status, vehicleId: log.vehicleId },
+        },
       });
 
       return updated;

@@ -12,7 +12,9 @@ import {
 import { StatusBadge } from "@/components/shared/status-badge";
 import { KpiGridSkeleton, TableSkeleton } from "@/components/shared/loading-skeleton";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { TripStatus } from "@prisma/client";
+import { VEHICLE_TYPE_OPTIONS, REGIONS } from "@/lib/constants";
+
+type TripStatus = "DRAFT" | "DISPATCHED" | "COMPLETED" | "CANCELLED";
 
 // ─── Types ────────────────────────────────────────────────────
 type Kpis = {
@@ -81,10 +83,18 @@ export function DashboardPage({ userName, userRole }: { userName: string; userRo
   const [recentTrips, setRecentTrips] = useState<RecentTrip[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState("");
+  const [tripStatusFilter, setTripStatusFilter] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
+
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/dashboard");
+      const params = new URLSearchParams();
+      if (vehicleTypeFilter) params.set("vehicleType", vehicleTypeFilter);
+      if (tripStatusFilter)  params.set("tripStatus",  tripStatusFilter);
+      if (regionFilter)      params.set("region",      regionFilter);
+      const res = await fetch(`/api/dashboard?${params}`);
       const data = await res.json();
       setKpis(data.kpis);
       setVehicleChart(data.vehicleStatusChart ?? []);
@@ -93,7 +103,7 @@ export function DashboardPage({ userName, userRole }: { userName: string; userRo
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [vehicleTypeFilter, tripStatusFilter, regionFilter]);
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
@@ -119,6 +129,54 @@ export function DashboardPage({ userName, userRole }: { userName: string; userRo
           <RefreshCw size={12} />
           Refresh
         </button>
+      </div>
+
+      {/* Filters row — vehicle type, trip status, region */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <span className="text-xs font-medium text-gray-500 mr-1">Filter recent trips:</span>
+
+        <select
+          value={vehicleTypeFilter}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVehicleTypeFilter(e.target.value)}
+          className="text-xs px-3 py-1.5 rounded-lg border bg-white text-gray-600 focus:outline-none"
+          style={{ borderColor: "var(--color-border)" }}>
+          <option value="">All Types</option>
+          {VEHICLE_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
+        <select
+          value={tripStatusFilter}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTripStatusFilter(e.target.value)}
+          className="text-xs px-3 py-1.5 rounded-lg border bg-white text-gray-600 focus:outline-none"
+          style={{ borderColor: "var(--color-border)" }}>
+          <option value="">All Statuses</option>
+          <option value="DRAFT">Draft</option>
+          <option value="DISPATCHED">Dispatched</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+
+        <select
+          value={regionFilter}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRegionFilter(e.target.value)}
+          className="text-xs px-3 py-1.5 rounded-lg border bg-white text-gray-600 focus:outline-none"
+          style={{ borderColor: "var(--color-border)" }}>
+          <option value="">All Regions</option>
+          {REGIONS.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+
+        {(vehicleTypeFilter || tripStatusFilter || regionFilter) && (
+          <button
+            onClick={() => { setVehicleTypeFilter(""); setTripStatusFilter(""); setRegionFilter(""); }}
+            className="text-xs px-3 py-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+            style={{ border: "1px solid #fecaca" }}>
+            Clear
+          </button>
+        )}
       </div>
 
       {/* 7 KPI Cards */}

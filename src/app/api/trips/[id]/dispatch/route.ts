@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Tx type derived from prisma instance — avoids Prisma namespace import issues
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
 // POST /api/trips/[id]/dispatch
 // Transaction: verify availability → update trip + vehicle + driver atomically
 export async function POST(
@@ -16,7 +19,7 @@ export async function POST(
   const { id: tripId } = await params;
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Tx) => {
       // Load the trip
       const trip = await tx.trip.findUniqueOrThrow({
         where: { id: tripId },
@@ -45,6 +48,8 @@ export async function POST(
         throw new Error(`Cargo weight exceeds vehicle capacity (${trip.cargoWeightKg} kg > ${trip.vehicle.capacityKg} kg)`);
       }
 
+      const userId = (session.user as { id: string }).id;
+
       // Rule 6: Atomic status update — trip + vehicle + driver
       const [updatedTrip] = await Promise.all([
         tx.trip.update({
@@ -58,6 +63,18 @@ export async function POST(
         tx.vehicle.update({ where: { id: trip.vehicleId }, data: { status: "ON_TRIP" } }),
         tx.driver.update({ where: { id: trip.driverId }, data: { status: "ON_TRIP" } }),
       ]);
+
+      // Audit log
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: "DISPATCH",
+          entity: "Trip",
+          entityId: tripId,
+          previousData: { status: "DRAFT" },
+          newData: { status: "DISPATCHED", vehicleId: trip.vehicleId, driverId: trip.driverId },
+        },
+      });
 
       return updatedTrip;
     });

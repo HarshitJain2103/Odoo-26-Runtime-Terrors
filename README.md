@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TransitOps — Fleet Management Platform
 
-## Getting Started
+A full-stack fleet management system built for hackathon demonstration.
 
-First, run the development server:
+## Tech Stack
+- **Next.js 15** (App Router, TypeScript)
+- **Prisma v6** + Neon PostgreSQL
+- **Auth.js v5** (JWT sessions, Credentials provider)
+- **Tailwind CSS** + custom design system
+- **Recharts** for analytics charts
+- **Zod** for dual validation (client + API)
+
+## Getting Started (Local)
 
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Copy and fill environment variables
+cp .env.example .env
+
+# 3. Push schema to database
+npx prisma db push
+
+# 4. Seed demo data
+npx prisma db seed
+
+# 5. Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Login Credentials (after seed)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@transitops.com | Admin@123 |
+| Fleet Manager | manager@transitops.com | Manager@123 |
+| Dispatcher | dispatcher@transitops.com | Dispatcher@123 |
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+```env
+DATABASE_URL=          # Neon pooled connection string
+DIRECT_DATABASE_URL=   # Neon direct connection string (for migrations)
+NEXTAUTH_SECRET=       # Random 32-char secret (openssl rand -base64 32)
+NEXTAUTH_URL=          # http://localhost:3000 (local) or https://yourapp.vercel.app (prod)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy to Vercel
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Push repository to GitHub
+2. Create new project on [vercel.com](https://vercel.com) → Import repo
+3. Set all 4 environment variables in Vercel dashboard → Settings → Environment Variables
+4. Override **Build Command**: `npx prisma generate && next build`
+5. Click **Deploy**
 
-## Deploy on Vercel
+After deploy:
+- Update `NEXTAUTH_URL` to your Vercel URL
+- Run seed via Vercel CLI: `vercel env pull && npx prisma db seed`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Key Features
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Module | What it does |
+|--------|-------------|
+| **Dashboard** | 7 live KPI cards, vehicle status chart, monthly trip/revenue area chart |
+| **Vehicles** | CRUD with unique reg validation, status badges, soft-retire |
+| **Drivers** | Safety score gauge, license expiry warnings, available/off-duty toggle |
+| **Trips** | Full lifecycle (Draft → Dispatched → Completed), transactional state machine |
+| **Maintenance** | SCHEDULED → IN\_PROGRESS → COMPLETED, auto-flips vehicle to IN\_SHOP |
+| **Fuel & Expenses** | Fuel log with auto total, per-vehicle cost breakdown |
+| **Reports** | ROI per vehicle, fuel efficiency trend, CSV export |
+| **Settings** | Role×Module RBAC matrix, general config |
+
+## Business Rules Enforced
+
+1. Vehicle reg number is unique (DB + Zod)
+2. Retired/IN_SHOP vehicles excluded from trip dispatch
+3. Expired license drivers blocked from trips
+4. Cargo weight ≤ vehicle capacity (real-time + API validation)
+5. Dispatch/Complete/Cancel are atomic Prisma `$transaction` operations
+6. Maintenance auto-sets vehicle to `IN_SHOP`, completion restores `AVAILABLE`

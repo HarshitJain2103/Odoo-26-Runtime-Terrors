@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createMaintenanceSchema } from "@/lib/validations";
-import type { Prisma, MaintenanceStatus } from "@prisma/client";
+
+// Tx type derived from prisma instance — avoids Prisma namespace import issues
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 // GET /api/maintenance?vehicleId=&status=&sort=&order=
 export async function GET(req: NextRequest) {
@@ -17,9 +19,9 @@ export async function GET(req: NextRequest) {
   const sort = searchParams.get("sort") ?? "scheduledDate";
   const order = (searchParams.get("order") ?? "desc") as "asc" | "desc";
 
-  const where: Prisma.MaintenanceLogWhereInput = {
+  const where: { vehicleId?: string; status?: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" } = {
     ...(vehicleId && { vehicleId }),
-    ...(status && { status: status as MaintenanceStatus }),
+    ...(status && { status: status as "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" }),
   };
 
   const logs = await prisma.maintenanceLog.findMany({
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const log = await prisma.$transaction(async (tx) => {
+    const log = await prisma.$transaction(async (tx: Tx) => {
       const vehicle = await tx.vehicle.findUniqueOrThrow({
         where: { id: parsed.data.vehicleId },
       });

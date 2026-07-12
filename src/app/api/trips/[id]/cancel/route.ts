@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Tx type derived from prisma instance — avoids Prisma namespace import issues
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
 // POST /api/trips/[id]/cancel
 // Rule 8: Cancel dispatched trip → restore vehicle + driver to AVAILABLE
 export async function POST(
@@ -16,7 +19,7 @@ export async function POST(
   const { id: tripId } = await params;
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Tx) => {
       const trip = await tx.trip.findUniqueOrThrow({
         where: { id: tripId },
         include: { vehicle: true, driver: true },
@@ -43,6 +46,19 @@ export async function POST(
             ]
           : []),
       ]);
+
+      // Audit log
+      const userId = (session.user as { id: string }).id;
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: "CANCEL",
+          entity: "Trip",
+          entityId: tripId,
+          previousData: { status: trip.status },
+          newData: { status: "CANCELLED" },
+        },
+      });
 
       return updatedTrip;
     });
