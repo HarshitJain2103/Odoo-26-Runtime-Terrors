@@ -14,6 +14,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Map,
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { NAV_ITEMS, ROLE_LABELS } from "@/lib/constants";
@@ -30,6 +31,7 @@ const ICON_MAP = {
   Fuel,
   BarChart3,
   Settings,
+  Map,
 } as const;
 
 type IconName = keyof typeof ICON_MAP;

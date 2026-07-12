@@ -83,6 +83,7 @@ export const NAV_ITEMS = [
   { href: "/maintenance", label: "Maintenance", icon: "Wrench", module: "maintenance" },
   { href: "/fuel-expenses", label: "Fuel & Expenses", icon: "Fuel", module: "fuel-expenses" },
   { href: "/reports", label: "Reports", icon: "BarChart3", module: "reports" },
+  { href: "/live-map", label: "Live Map", icon: "Map", module: "live-map" },
   { href: "/settings", label: "Settings", icon: "Settings", module: "settings" },
 ] as const;
 

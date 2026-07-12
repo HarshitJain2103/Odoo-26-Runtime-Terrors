@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, AlertCircle, CheckCircle, Weight } from "lucide-react";
+import { X, AlertCircle, CheckCircle, Weight, Loader2 } from "lucide-react";
+import { LocationSearch } from "./location-search";
 import { createTripSchema } from "@/lib/validations";
 import { formatNumber } from "@/lib/utils";
 
@@ -33,11 +34,17 @@ export function TripForm({ onClose, onSuccess }: TripFormProps) {
   const [form, setForm] = useState({
     source: "",
     destination: "",
+    sourceLat: undefined as number | undefined,
+    sourceLng: undefined as number | undefined,
+    destLat: undefined as number | undefined,
+    destLng: undefined as number | undefined,
+    routeGeoJson: null as any,
     vehicleId: "",
     driverId: "",
     cargoWeightKg: "",
     plannedDistanceKm: "",
   });
+  const [routeLoading, setRouteLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -62,6 +69,36 @@ export function TripForm({ onClose, onSuccess }: TripFormProps) {
     }
     load();
   }, []);
+
+  // OSRM auto-routing when both coordinates are set
+  useEffect(() => {
+    if (form.sourceLat && form.sourceLng && form.destLat && form.destLng) {
+      async function getRoute() {
+        setRouteLoading(true);
+        try {
+          // OSRM route request (v1/driving/lon,lat;lon,lat)
+          const url = `https://router.project-osrm.org/route/v1/driving/${form.sourceLng},${form.sourceLat};${form.destLng},${form.destLat}?overview=full&geometries=geojson`;
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.code === "Ok" && data.routes.length > 0) {
+            const route = data.routes[0];
+            const distanceKm = (route.distance / 1000).toFixed(1);
+            setForm(prev => ({
+              ...prev,
+              plannedDistanceKm: distanceKm,
+              routeGeoJson: route.geometry,
+            }));
+            setErrors(prev => ({ ...prev, plannedDistanceKm: undefined }));
+          }
+        } catch (err) {
+          console.error("OSRM Error:", err);
+        } finally {
+          setRouteLoading(false);
+        }
+      }
+      getRoute();
+    }
+  }, [form.sourceLat, form.sourceLng, form.destLat, form.destLng]);
 
   function setField(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -138,18 +175,26 @@ export function TripForm({ onClose, onSuccess }: TripFormProps) {
 
             {/* Source + Destination */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="form-label">Source <span className="text-red-500">*</span></label>
-                <input className={`form-input ${errors.source ? "error" : ""}`} placeholder="Mumbai"
-                  value={form.source} onChange={(e) => setField("source", e.target.value)} />
-                {errors.source && <p className="text-xs text-red-500 mt-1">{errors.source}</p>}
-              </div>
-              <div>
-                <label className="form-label">Destination <span className="text-red-500">*</span></label>
-                <input className={`form-input ${errors.destination ? "error" : ""}`} placeholder="Pune"
-                  value={form.destination} onChange={(e) => setField("destination", e.target.value)} />
-                {errors.destination && <p className="text-xs text-red-500 mt-1">{errors.destination}</p>}
-              </div>
+              <LocationSearch
+                label="Source *"
+                placeholder="Search starting point..."
+                value={form.source}
+                error={errors.source}
+                onChange={(name, lat, lng) => {
+                  setForm(prev => ({ ...prev, source: name, sourceLat: lat, sourceLng: lng }));
+                  setErrors(prev => ({ ...prev, source: undefined }));
+                }}
+              />
+              <LocationSearch
+                label="Destination *"
+                placeholder="Search destination..."
+                value={form.destination}
+                error={errors.destination}
+                onChange={(name, lat, lng) => {
+                  setForm(prev => ({ ...prev, destination: name, destLat: lat, destLng: lng }));
+                  setErrors(prev => ({ ...prev, destination: undefined }));
+                }}
+              />
             </div>
 
             {/* Vehicle dropdown — only AVAILABLE */}
@@ -221,12 +266,16 @@ export function TripForm({ onClose, onSuccess }: TripFormProps) {
 
             {/* Planned Distance */}
             <div>
-              <label className="form-label">Planned Distance (km) <span className="text-red-500">*</span></label>
-              <input type="number" min="1"
+              <label className="form-label flex items-center gap-2">
+                Planned Distance (km) <span className="text-red-500">*</span>
+                {routeLoading && <Loader2 size={12} className="animate-spin text-gray-400" />}
+              </label>
+              <input type="number" min="1" step="0.1"
                 className={`form-input ${errors.plannedDistanceKm ? "error" : ""}`}
-                placeholder="250"
+                placeholder="Auto-calculated if locations found"
                 value={form.plannedDistanceKm}
                 onChange={(e) => setField("plannedDistanceKm", e.target.value)} />
+
               {errors.plannedDistanceKm && <p className="text-xs text-red-500 mt-1">{errors.plannedDistanceKm}</p>}
             </div>
           </div>

@@ -183,6 +183,14 @@ model Trip {
   fuelLogs  FuelLog[]
   expenses  Expense[]
 
+  // Location coordinates (from Nominatim geocoding)
+  sourceLat     Decimal?  @db.Decimal(10, 7)
+  sourceLng     Decimal?  @db.Decimal(10, 7)
+  destLat       Decimal?  @db.Decimal(10, 7)
+  destLng       Decimal?  @db.Decimal(10, 7)
+  // OSRM route geometry stored as GeoJSON LineString for live map
+  routeGeoJson  Json?
+
   @@index([status])
   @@index([vehicleId])
   @@index([driverId])
