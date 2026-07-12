@@ -60,7 +60,7 @@ async function main() {
   console.log("✅ Users seeded");
 
   // 2. Vehicles (20 vehicles)
-  const vehicleTypes = ["TRUCK", "VAN", "PICKUP", "TRAILER"] as const;
+  const vehicleTypes: ("TRUCK" | "VAN" | "PICKUP" | "TRAILER")[] = ["TRUCK", "VAN", "PICKUP", "TRAILER"];
   const vehicles = [];
   for (let i = 1; i <= 20; i++) {
     const type = randomChoice(vehicleTypes);
