@@ -50,19 +50,26 @@ export async function POST(
 
       const userId = (session.user as { id: string }).id;
 
-      // Rule 6: Atomic status update — trip + vehicle + driver
-      const [updatedTrip] = await Promise.all([
-        tx.trip.update({
-          where: { id: tripId },
-          data: { status: "DISPATCHED", dispatchedAt: new Date() },
-          include: {
-            vehicle: { select: { id: true, regNo: true, name: true } },
-            driver: { select: { id: true, name: true } },
-          },
-        }),
-        tx.vehicle.update({ where: { id: trip.vehicleId }, data: { status: "ON_TRIP" } }),
-        tx.driver.update({ where: { id: trip.driverId }, data: { status: "ON_TRIP" } }),
-      ]);
+      // Rule 6: Dispatch → vehicle + driver = ON_TRIP
+      const updatedTrip = await tx.trip.update({
+        where: { id: tripId },
+        data: {
+          status: "DISPATCHED",
+          dispatchedAt: new Date(),
+        },
+        include: {
+          vehicle: { select: { id: true, regNo: true, name: true } },
+          driver: { select: { id: true, name: true } },
+        },
+      });
+      await tx.vehicle.update({
+        where: { id: trip.vehicleId },
+        data: { status: "ON_TRIP" },
+      });
+      await tx.driver.update({
+        where: { id: trip.driverId },
+        data: { status: "ON_TRIP" },
+      });
 
       // Audit log
       await tx.auditLog.create({
@@ -77,7 +84,7 @@ export async function POST(
       });
 
       return updatedTrip;
-    });
+    }, { maxWait: 5000, timeout: 20000 });
 
     return NextResponse.json({ trip: result });
   } catch (err) {

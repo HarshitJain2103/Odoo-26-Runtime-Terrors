@@ -50,6 +50,11 @@ export const createTripSchema = z.object({
   cargoWeightKg: z.number({ coerce: true }).positive("Cargo weight must be positive"),
   plannedDistanceKm: z.number({ coerce: true }).positive("Distance must be positive"),
   revenue: z.number({ coerce: true }).min(0).optional(),
+  sourceLat: z.number({ coerce: true }).optional(),
+  sourceLng: z.number({ coerce: true }).optional(),
+  destLat: z.number({ coerce: true }).optional(),
+  destLng: z.number({ coerce: true }).optional(),
+  routeGeoJson: z.any().optional(),
 });
 export const completeTripSchema = z.object({
   actualDistanceKm: z.number({ coerce: true }).positive("Actual distance must be positive"),

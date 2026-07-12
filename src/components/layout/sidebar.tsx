@@ -14,11 +14,11 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Map,
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
-import { NAV_ITEMS, ROLE_LABELS } from "@/lib/constants";
+import { NAV_ITEMS, ROLE_LABELS, type UserRole } from "@/lib/constants";
 import { canView } from "@/lib/rbac";
-import type { UserRole } from "@prisma/client";
 import { useState } from "react";
 
 const ICON_MAP = {
@@ -30,6 +30,7 @@ const ICON_MAP = {
   Fuel,
   BarChart3,
   Settings,
+  Map,
 } as const;
 
 type IconName = keyof typeof ICON_MAP;

@@ -1,10 +1,9 @@
-import type {
-  VehicleStatus,
-  DriverStatus,
-  TripStatus,
-  MaintenanceStatus,
-  UserRole,
-} from "@prisma/client";
+// Prisma Enums defined inline to avoid TS namespace/export errors
+export type UserRole = "ADMIN" | "FLEET_MANAGER" | "DISPATCHER" | "SAFETY_OFFICER" | "FINANCIAL_ANALYST";
+export type VehicleStatus = "AVAILABLE" | "ON_TRIP" | "IN_SHOP" | "RETIRED";
+export type DriverStatus = "AVAILABLE" | "ON_TRIP" | "OFF_DUTY" | "SUSPENDED";
+export type TripStatus = "DRAFT" | "DISPATCHED" | "COMPLETED" | "CANCELLED";
+export type MaintenanceStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED";
 
 // ─────────────────────────────────────────────
 // STATUS COLORS
@@ -64,11 +63,11 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export type AccessLevel = "NONE" | "VIEW" | "CREATE" | "EDIT" | "FULL";
 
 export const RBAC_MATRIX: Record<UserRole, Record<string, AccessLevel>> = {
-  ADMIN:              { dashboard: "FULL", vehicles: "FULL", drivers: "FULL", trips: "FULL", maintenance: "FULL", "fuel-expenses": "FULL", reports: "FULL", settings: "FULL" },
-  FLEET_MANAGER:      { dashboard: "VIEW", vehicles: "FULL", drivers: "FULL", trips: "FULL", maintenance: "FULL", "fuel-expenses": "FULL", reports: "VIEW", settings: "VIEW" },
-  DISPATCHER:         { dashboard: "VIEW", vehicles: "VIEW", drivers: "VIEW", trips: "FULL", maintenance: "VIEW", "fuel-expenses": "CREATE", reports: "VIEW", settings: "NONE" },
-  SAFETY_OFFICER:     { dashboard: "VIEW", vehicles: "VIEW", drivers: "FULL", trips: "VIEW", maintenance: "VIEW", "fuel-expenses": "VIEW", reports: "VIEW", settings: "NONE" },
-  FINANCIAL_ANALYST:  { dashboard: "VIEW", vehicles: "VIEW", drivers: "VIEW", trips: "VIEW", maintenance: "VIEW", "fuel-expenses": "FULL", reports: "FULL", settings: "NONE" },
+  ADMIN:              { dashboard: "FULL", vehicles: "FULL", drivers: "FULL", trips: "FULL", maintenance: "FULL", "fuel-expenses": "FULL", reports: "FULL", "live-map": "FULL", settings: "FULL" },
+  FLEET_MANAGER:      { dashboard: "VIEW", vehicles: "FULL", drivers: "FULL", trips: "FULL", maintenance: "FULL", "fuel-expenses": "FULL", reports: "VIEW", "live-map": "VIEW", settings: "VIEW" },
+  DISPATCHER:         { dashboard: "VIEW", vehicles: "VIEW", drivers: "VIEW", trips: "FULL", maintenance: "VIEW", "fuel-expenses": "CREATE", reports: "VIEW", "live-map": "VIEW", settings: "NONE" },
+  SAFETY_OFFICER:     { dashboard: "VIEW", vehicles: "VIEW", drivers: "FULL", trips: "VIEW", maintenance: "VIEW", "fuel-expenses": "VIEW", reports: "VIEW", "live-map": "VIEW", settings: "NONE" },
+  FINANCIAL_ANALYST:  { dashboard: "VIEW", vehicles: "VIEW", drivers: "VIEW", trips: "VIEW", maintenance: "VIEW", "fuel-expenses": "FULL", reports: "FULL", "live-map": "NONE", settings: "NONE" },
 };
 
 // ─────────────────────────────────────────────
@@ -83,6 +82,7 @@ export const NAV_ITEMS = [
   { href: "/maintenance", label: "Maintenance", icon: "Wrench", module: "maintenance" },
   { href: "/fuel-expenses", label: "Fuel & Expenses", icon: "Fuel", module: "fuel-expenses" },
   { href: "/reports", label: "Reports", icon: "BarChart3", module: "reports" },
+  { href: "/live-map", label: "Live Map", icon: "Map", module: "live-map" },
   { href: "/settings", label: "Settings", icon: "Settings", module: "settings" },
 ] as const;
 

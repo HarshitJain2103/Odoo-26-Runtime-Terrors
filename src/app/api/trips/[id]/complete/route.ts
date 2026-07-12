@@ -41,30 +41,28 @@ export async function POST(
       }
 
       // Rule 7: Complete → vehicle + driver = AVAILABLE, update odometer
-      const [updatedTrip] = await Promise.all([
-        tx.trip.update({
-          where: { id: tripId },
-          data: {
-            status: "COMPLETED",
-            completedAt: new Date(),
-            actualDistanceKm,
-            revenue: revenue ?? null,
-            completionNotes: completionNotes ?? null,
-          },
-          include: {
-            vehicle: { select: { id: true, regNo: true, name: true } },
-            driver: { select: { id: true, name: true } },
-          },
-        }),
-        tx.vehicle.update({
-          where: { id: trip.vehicleId },
-          data: {
-            status: "AVAILABLE",
-            ...(finalOdometer && { odometer: finalOdometer }),
-          },
-        }),
-        tx.driver.update({ where: { id: trip.driverId }, data: { status: "AVAILABLE" } }),
-      ]);
+      const updatedTrip = await tx.trip.update({
+        where: { id: tripId },
+        data: {
+          status: "COMPLETED",
+          completedAt: new Date(),
+          actualDistanceKm,
+          revenue: revenue ?? null,
+          completionNotes: completionNotes ?? null,
+        },
+        include: {
+          vehicle: { select: { id: true, regNo: true, name: true } },
+          driver: { select: { id: true, name: true } },
+        },
+      });
+      await tx.vehicle.update({
+        where: { id: trip.vehicleId },
+        data: {
+          status: "AVAILABLE",
+          ...(finalOdometer && { odometer: finalOdometer }),
+        },
+      });
+      await tx.driver.update({ where: { id: trip.driverId }, data: { status: "AVAILABLE" } });
 
       // Create fuel log if fuel data provided
       if (fuelConsumed && fuelCostPerLiter) {
@@ -95,7 +93,7 @@ export async function POST(
       });
 
       return updatedTrip;
-    });
+    }, { maxWait: 5000, timeout: 20000 });
 
     return NextResponse.json({ trip: result });
   } catch (err) {

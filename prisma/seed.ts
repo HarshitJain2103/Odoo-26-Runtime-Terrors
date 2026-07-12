@@ -1,610 +1,215 @@
 import { prisma } from "../src/lib/prisma";
 import bcrypt from "bcryptjs";
 
+const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
+const randomChoice = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-// Helper: days ago
-const daysAgo = (n: number): Date => {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d;
-};
+// Predefined routes for realistic map generation
+const PREDEFINED_ROUTES = [
+  { source: "Delhi", dest: "Jaipur", sourceLat: 28.6139, sourceLng: 77.2090, destLat: 26.9124, destLng: 75.7873 },
+  { source: "Mumbai", dest: "Pune", sourceLat: 19.0760, sourceLng: 72.8777, destLat: 18.5204, destLng: 73.8567 },
+  { source: "Bangalore", dest: "Mysore", sourceLat: 12.9716, sourceLng: 77.5946, destLat: 12.2958, destLng: 76.6394 },
+  { source: "Ahmedabad", dest: "Surat", sourceLat: 23.0225, sourceLng: 72.5714, destLat: 21.1702, destLng: 72.8311 },
+  { source: "Chennai", dest: "Tirupati", sourceLat: 13.0827, sourceLng: 80.2707, destLat: 13.6288, destLng: 79.4192 },
+  { source: "Hyderabad", dest: "Warangal", sourceLat: 17.3850, sourceLng: 78.4867, destLat: 17.9689, destLng: 79.5941 },
+  { source: "Kolkata", dest: "Durgapur", sourceLat: 22.5726, sourceLng: 88.3639, destLat: 23.5204, destLng: 87.3119 },
+];
 
-// Helper: months ago
-const monthsAgo = (n: number): Date => {
-  const d = new Date();
-  d.setMonth(d.getMonth() - n);
-  return d;
-};
+async function fetchRouteGeoJson(sourceLng: number, sourceLat: number, destLng: number, destLat: number) {
+  try {
+    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${sourceLng},${sourceLat};${destLng},${destLat}?overview=full&geometries=geojson`);
+    const data = await res.json();
+    if (data.code === "Ok" && data.routes.length > 0) {
+      return { 
+        distance: data.routes[0].distance, 
+        geometry: data.routes[0].geometry 
+      };
+    }
+  } catch (err) {
+    console.error("Failed to fetch route:", err);
+  }
+  return null;
+}
 
-async function main(): Promise<void> {
-  console.log("🌱 Seeding TransitOps database (comprehensive)...");
+async function main() {
+  console.log("🌱 Seeding TransitOps database (Comprehensive v2)...");
 
-  // ─── CLEAN SLATE (delete in FK-safe order) ────────────────
   console.log("🧹 Clearing existing data...");
   await prisma.auditLog.deleteMany();
   await prisma.expense.deleteMany();
   await prisma.fuelLog.deleteMany();
   await prisma.maintenanceLog.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.trip.deleteMany();
   await prisma.driver.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.user.deleteMany();
 
-  // ─── USERS ───────────────────────────────────────────────
+  // 1. Users
   const [adminHash, managerHash, dispatcherHash, safetyHash, analystHash] = await Promise.all([
-    bcrypt.hash("Admin@123", 12),
-    bcrypt.hash("Manager@123", 12),
-    bcrypt.hash("Dispatcher@123", 12),
-    bcrypt.hash("Safety@123", 12),
-    bcrypt.hash("Analyst@123", 12),
+    bcrypt.hash("Admin@123", 12), bcrypt.hash("Manager@123", 12), bcrypt.hash("Dispatcher@123", 12),
+    bcrypt.hash("Safety@123", 12), bcrypt.hash("Analyst@123", 12),
   ]);
+  const manager = await prisma.user.create({ data: { name: "Fleet Manager", email: "manager@transitops.com", passwordHash: managerHash, role: "FLEET_MANAGER" } });
+  const dispatcher = await prisma.user.create({ data: { name: "Trip Dispatcher", email: "dispatcher@transitops.com", passwordHash: dispatcherHash, role: "DISPATCHER" } });
+  await prisma.user.create({ data: { name: "System Admin", email: "admin@transitops.com", passwordHash: adminHash, role: "ADMIN" } });
+  await prisma.user.create({ data: { name: "Safety Officer", email: "safety@transitops.com", passwordHash: safetyHash, role: "SAFETY_OFFICER" } });
+  await prisma.user.create({ data: { name: "Financial Analyst", email: "analyst@transitops.com", passwordHash: analystHash, role: "FINANCIAL_ANALYST" } });
 
-  const [admin, manager, dispatcher] = await Promise.all([
-    prisma.user.create({
-      data: {
-        name: "System Admin",
-        email: "admin@transitops.com",
-        passwordHash: adminHash,
-        role: "ADMIN",
-      },
-    }),
-    prisma.user.create({
-      data: {
-        name: "Fleet Manager",
-        email: "manager@transitops.com",
-        passwordHash: managerHash,
-        role: "FLEET_MANAGER",
-      },
-    }),
-    prisma.user.create({
-      data: {
-        name: "Trip Dispatcher",
-        email: "dispatcher@transitops.com",
-        passwordHash: dispatcherHash,
-        role: "DISPATCHER",
-      },
-    }),
-    prisma.user.create({
-      data: {
-        name: "Safety Officer",
-        email: "safety@transitops.com",
-        passwordHash: safetyHash,
-        role: "SAFETY_OFFICER",
-      },
-    }),
-    prisma.user.create({
-      data: {
-        name: "Financial Analyst",
-        email: "analyst@transitops.com",
-        passwordHash: analystHash,
-        role: "FINANCIAL_ANALYST",
-      },
-    }),
-  ]);
+  console.log("✅ Users seeded");
 
-  // Keep admin/manager/dispatcher in scope for audit log etc. later if needed
-  void admin;
-  void manager;
-  void dispatcher;
+  // 2. Vehicles (20 vehicles)
+  const vehicleTypes = ["TRUCK", "VAN", "PICKUP", "TRAILER"] as const;
+  const vehicles = [];
+  for (let i = 1; i <= 20; i++) {
+    const type = randomChoice(vehicleTypes);
+    const cap = type === "TRAILER" ? 20000 : type === "TRUCK" ? 10000 : type === "VAN" ? 2000 : 1000;
+    vehicles.push(await prisma.vehicle.create({
+      data: {
+        regNo: `MH-01-${String.fromCharCode(64+randomInt(1,26))}${String.fromCharCode(64+randomInt(1,26))}-${1000+i}`,
+        name: `${type.charAt(0) + type.slice(1).toLowerCase()} Model X-${i}`,
+        type,
+        capacityKg: cap,
+        odometer: randomInt(10000, 150000),
+        acquisitionCost: randomInt(20000, 80000),
+        status: i <= 3 ? "ON_TRIP" : i === 4 ? "IN_SHOP" : i === 20 ? "RETIRED" : "AVAILABLE",
+        region: randomChoice(["North", "South", "West", "East", "Central"])
+      }
+    }));
+  }
+  console.log("✅ Vehicles seeded (20)");
 
-  console.log("✅ Users seeded (5)");
+  // 3. Drivers (20 drivers)
+  const drivers = [];
+  const firstNames = ["Rajesh", "Suresh", "Ramesh", "Manish", "Amit", "Vikram", "Sunil", "Anil", "Rahul", "Karan"];
+  const lastNames = ["Kumar", "Singh", "Patel", "Sharma", "Verma", "Yadav", "Gupta", "Mishra", "Das", "Jain"];
+  
+  for (let i = 1; i <= 20; i++) {
+    drivers.push(await prisma.driver.create({
+      data: {
+        name: `${randomChoice(firstNames)} ${randomChoice(lastNames)}`,
+        licenseNo: `DL-${randomInt(10,99)}-${2010+randomInt(1,14)}-${1000000+i}`,
+        licenseCategory: randomChoice(["C", "CE", "D"]),
+        licenseExpiry: i % 4 === 0 ? daysAgo(randomInt(10, 100)) : daysAgo(-randomInt(100, 1000)), // 25% expired
+        contactNo: `98${randomInt(10000000, 99999999)}`,
+        safetyScore: randomInt(65, 100),
+        status: i <= 3 ? "ON_TRIP" : i === 4 ? "OFF_DUTY" : "AVAILABLE",
+        region: randomChoice(["North", "South", "West", "East", "Central"])
+      }
+    }));
+  }
+  console.log("✅ Drivers seeded (20)");
 
-  // ─── VEHICLES ────────────────────────────────────────────
-  // v[1] = ON_TRIP (matched to DISPATCHED trip below)
-  // v[2] = IN_SHOP (matched to IN_PROGRESS maintenance below)
-  const [v0, v1, v2, v3, v4] = await Promise.all([
-    prisma.vehicle.create({
-      data: {
-        regNo: "MH-01-AB-1234",
-        name: "Ford Transit Van-01",
-        type: "VAN",
-        capacityKg: 1200,
-        odometer: 45200,
-        acquisitionCost: 1800000,
-        status: "AVAILABLE",
-        region: "West",
-      },
-    }),
-    prisma.vehicle.create({
-      data: {
-        regNo: "DL-02-CD-5678",
-        name: "Tata Ace Mini Truck-01",
-        type: "TRUCK",
-        capacityKg: 750,
-        odometer: 88000,
-        acquisitionCost: 650000,
-        status: "ON_TRIP", // matched to DISPATCHED trip
-        region: "North",
-      },
-    }),
-    prisma.vehicle.create({
-      data: {
-        regNo: "KA-03-EF-9012",
-        name: "Ashok Leyland Truck-01",
-        type: "TRUCK",
-        capacityKg: 7500,
-        odometer: 120000,
-        acquisitionCost: 3200000,
-        status: "IN_SHOP", // matched to IN_PROGRESS maintenance
-        region: "South",
-      },
-    }),
-    prisma.vehicle.create({
-      data: {
-        regNo: "GJ-04-GH-3456",
-        name: "Mahindra Pickup-01",
-        type: "PICKUP",
-        capacityKg: 900,
-        odometer: 22500,
-        acquisitionCost: 980000,
-        status: "AVAILABLE",
-        region: "West",
-      },
-    }),
-    prisma.vehicle.create({
-      data: {
-        regNo: "TN-05-IJ-7890",
-        name: "Volvo FH Trailer-01",
-        type: "TRAILER",
-        capacityKg: 20000,
-        odometer: 310000,
-        acquisitionCost: 8500000,
-        status: "AVAILABLE",
-        region: "South",
-      },
-    }),
-  ]);
+  // Pre-fetch route data to avoid fetching 30 times
+  console.log("🗺️  Fetching actual routes from OSRM for realism...");
+  const cachedRoutes = [];
+  for (const r of PREDEFINED_ROUTES) {
+    const routeData = await fetchRouteGeoJson(r.sourceLng, r.sourceLat, r.destLng, r.destLat);
+    cachedRoutes.push({ ...r, routeData });
+    await new Promise(res => setTimeout(res, 500)); // Respect OSRM rate limits
+  }
 
-  console.log("✅ Vehicles seeded (5)");
+  // 4. Trips (40 trips: 5 DRAFT, 5 DISPATCHED, 30 COMPLETED)
+  const trips = [];
+  let codeCounter = 1;
 
-  // ─── DRIVERS ─────────────────────────────────────────────
-  // d[1] = ON_TRIP (matched to DISPATCHED trip below)
-  const [d0, d1, d2, d3, d4] = await Promise.all([
-    prisma.driver.create({
-      data: {
-        name: "Rajesh Kumar",
-        licenseNo: "MH0120190012345",
-        licenseCategory: "C",
-        licenseExpiry: new Date("2026-11-30"),
-        contactNo: "+91-9876543210",
-        safetyScore: 92,
-        status: "AVAILABLE",
-        region: "West",
-      },
-    }),
-    prisma.driver.create({
-      data: {
-        name: "Suresh Singh",
-        licenseNo: "DL0220210056789",
-        licenseCategory: "CE",
-        licenseExpiry: new Date("2027-03-15"),
-        contactNo: "+91-9765432109",
-        safetyScore: 87,
-        status: "ON_TRIP", // matched to DISPATCHED trip
-        region: "North",
-      },
-    }),
-    prisma.driver.create({
-      data: {
-        name: "Arun Nair",
-        licenseNo: "KA0320180034567",
-        licenseCategory: "DE",
-        licenseExpiry: new Date("2025-08-20"), // EXPIRED — shows red in UI
-        contactNo: "+91-9654321098",
-        safetyScore: 75,
-        status: "OFF_DUTY",
-        region: "South",
-      },
-    }),
-    prisma.driver.create({
-      data: {
-        name: "Manish Patel",
-        licenseNo: "GJ0420220078901",
-        licenseCategory: "B",
-        licenseExpiry: new Date("2028-01-10"),
-        contactNo: "+91-9543210987",
-        safetyScore: 96,
-        status: "AVAILABLE",
-        region: "West",
-      },
-    }),
-    prisma.driver.create({
-      data: {
-        name: "Selvam Raj",
-        licenseNo: "TN0520170023456",
-        licenseCategory: "CE",
-        licenseExpiry: new Date("2026-06-30"),
-        contactNo: "+91-9432109876",
-        safetyScore: 88,
-        status: "AVAILABLE",
-        region: "South",
-      },
-    }),
-  ]);
+  for (let i = 0; i < 40; i++) {
+    let status: "DRAFT" | "DISPATCHED" | "COMPLETED" | "CANCELLED" = "COMPLETED";
+    if (i < 5) status = "DRAFT";
+    else if (i < 10) status = "DISPATCHED";
 
-  console.log("✅ Drivers seeded (5)");
+    const v = vehicles[i % vehicles.length];
+    const d = drivers[i % drivers.length];
+    const r = randomChoice(cachedRoutes);
+    const dist = (r.routeData?.distance ?? 100000) / 1000;
 
-  // ─── TRIPS (15 across 5 months for chart data) ───────────
-  // Month labels: M-5, M-4, M-3, M-2, M-1, current month
+    const tripDate = status === "COMPLETED" ? daysAgo(randomInt(10, 180)) : daysAgo(randomInt(0, 5));
 
-  type TripSeed = {
-    code: string;
-    source: string;
-    destination: string;
-    vehicleId: string;
-    driverId: string;
-    createdById: string;
-    cargoWeightKg: number;
-    plannedDistanceKm: number;
-    actualDistanceKm?: number;
-    revenue?: number;
-    status: "COMPLETED" | "CANCELLED" | "DISPATCHED" | "DRAFT";
-    dispatchedAt?: Date;
-    completedAt?: Date;
-    cancelledAt?: Date;
-    createdAt: Date;
-  };
+    trips.push(await prisma.trip.create({
+      data: {
+        code: `TRP-00${codeCounter++}`,
+        source: r.source,
+        destination: r.dest,
+        sourceLat: r.sourceLat,
+        sourceLng: r.sourceLng,
+        destLat: r.destLat,
+        destLng: r.destLng,
+        routeGeoJson: r.routeData?.geometry ?? undefined,
+        vehicleId: v.id,
+        driverId: d.id,
+        status,
+        cargoWeightKg: randomInt(500, Number(v.capacityKg)),
+        plannedDistanceKm: dist,
+        actualDistanceKm: status === "COMPLETED" ? dist * (1 + (Math.random() * 0.1 - 0.05)) : null,
+        revenue: status === "COMPLETED" ? randomInt(5000, 25000) : null,
+        createdAt: tripDate,
+        dispatchedAt: status !== "DRAFT" ? tripDate : null,
+        completedAt: status === "COMPLETED" ? new Date(tripDate.getTime() + 86400000 * randomInt(1, 4)) : null,
+        createdById: dispatcher.id
+      }
+    }));
+  }
+  console.log("✅ Trips seeded (40) with real GPS routes");
 
-  const tripSeeds: TripSeed[] = [
-    // ── Month -5 ──
-    {
-      code: "TRP-001",
-      source: "Mumbai",
-      destination: "Ahmedabad",
-      vehicleId: v0.id, driverId: d0.id, createdById: dispatcher.id,
-      cargoWeightKg: 900, plannedDistanceKm: 530,
-      actualDistanceKm: 545, revenue: 38000, status: "COMPLETED",
-      createdAt: monthsAgo(5),
-      dispatchedAt: monthsAgo(5), completedAt: monthsAgo(5),
-    },
-    {
-      code: "TRP-002",
-      source: "Chennai",
-      destination: "Hyderabad",
-      vehicleId: v4.id, driverId: d4.id, createdById: dispatcher.id,
-      cargoWeightKg: 12000, plannedDistanceKm: 625,
-      actualDistanceKm: 630, revenue: 95000, status: "COMPLETED",
-      createdAt: monthsAgo(5),
-      dispatchedAt: monthsAgo(5), completedAt: monthsAgo(5),
-    },
-    // ── Month -4 ──
-    {
-      code: "TRP-003",
-      source: "Delhi",
-      destination: "Chandigarh",
-      vehicleId: v3.id, driverId: d3.id, createdById: dispatcher.id,
-      cargoWeightKg: 750, plannedDistanceKm: 265,
-      actualDistanceKm: 270, revenue: 22000, status: "COMPLETED",
-      createdAt: monthsAgo(4),
-      dispatchedAt: monthsAgo(4), completedAt: monthsAgo(4),
-    },
-    {
-      code: "TRP-004",
-      source: "Kolkata",
-      destination: "Bhubaneswar",
-      vehicleId: v0.id, driverId: d0.id, createdById: dispatcher.id,
-      cargoWeightKg: 1100, plannedDistanceKm: 460,
-      actualDistanceKm: 472, revenue: 35000, status: "COMPLETED",
-      createdAt: monthsAgo(4),
-      dispatchedAt: monthsAgo(4), completedAt: monthsAgo(4),
-    },
-    {
-      code: "TRP-005",
-      source: "Pune",
-      destination: "Nagpur",
-      vehicleId: v3.id, driverId: d3.id, createdById: dispatcher.id,
-      cargoWeightKg: 800, plannedDistanceKm: 595,
-      status: "CANCELLED",
-      createdAt: monthsAgo(4),
-      dispatchedAt: monthsAgo(4),
-      cancelledAt: monthsAgo(4),
-    },
-    // ── Month -3 ──
-    {
-      code: "TRP-006",
-      source: "Mumbai",
-      destination: "Pune",
-      vehicleId: v0.id, driverId: d0.id, createdById: dispatcher.id,
-      cargoWeightKg: 850, plannedDistanceKm: 155,
-      actualDistanceKm: 162, revenue: 25000, status: "COMPLETED",
-      createdAt: monthsAgo(3),
-      dispatchedAt: monthsAgo(3), completedAt: monthsAgo(3),
-    },
-    {
-      code: "TRP-007",
-      source: "Chennai",
-      destination: "Bangalore",
-      vehicleId: v4.id, driverId: d4.id, createdById: dispatcher.id,
-      cargoWeightKg: 15000, plannedDistanceKm: 348,
-      actualDistanceKm: 355, revenue: 85000, status: "COMPLETED",
-      createdAt: monthsAgo(3),
-      dispatchedAt: monthsAgo(3), completedAt: monthsAgo(3),
-    },
-    {
-      code: "TRP-008",
-      source: "Hyderabad",
-      destination: "Vijayawada",
-      vehicleId: v3.id, driverId: d3.id, createdById: dispatcher.id,
-      cargoWeightKg: 700, plannedDistanceKm: 275,
-      actualDistanceKm: 282, revenue: 21000, status: "COMPLETED",
-      createdAt: monthsAgo(3),
-      dispatchedAt: monthsAgo(3), completedAt: monthsAgo(3),
-    },
-    // ── Month -2 ──
-    {
-      code: "TRP-009",
-      source: "Delhi",
-      destination: "Lucknow",
-      vehicleId: v0.id, driverId: d0.id, createdById: dispatcher.id,
-      cargoWeightKg: 1050, plannedDistanceKm: 555,
-      actualDistanceKm: 562, revenue: 44000, status: "COMPLETED",
-      createdAt: monthsAgo(2),
-      dispatchedAt: monthsAgo(2), completedAt: monthsAgo(2),
-    },
-    {
-      code: "TRP-010",
-      source: "Bangalore",
-      destination: "Mysore",
-      vehicleId: v3.id, driverId: d3.id, createdById: dispatcher.id,
-      cargoWeightKg: 600, plannedDistanceKm: 145,
-      actualDistanceKm: 148, revenue: 12000, status: "COMPLETED",
-      createdAt: monthsAgo(2),
-      dispatchedAt: monthsAgo(2), completedAt: monthsAgo(2),
-    },
-    // ── Month -1 ──
-    {
-      code: "TRP-011",
-      source: "Mumbai",
-      destination: "Nashik",
-      vehicleId: v4.id, driverId: d4.id, createdById: dispatcher.id,
-      cargoWeightKg: 18000, plannedDistanceKm: 170,
-      actualDistanceKm: 175, revenue: 55000, status: "COMPLETED",
-      createdAt: monthsAgo(1),
-      dispatchedAt: monthsAgo(1), completedAt: monthsAgo(1),
-    },
-    {
-      code: "TRP-012",
-      source: "Ahmedabad",
-      destination: "Surat",
-      vehicleId: v0.id, driverId: d0.id, createdById: dispatcher.id,
-      cargoWeightKg: 800, plannedDistanceKm: 265,
-      actualDistanceKm: 270, revenue: 20000, status: "COMPLETED",
-      createdAt: monthsAgo(1),
-      dispatchedAt: monthsAgo(1), completedAt: monthsAgo(1),
-    },
-    // ── Current month ──
-    {
-      code: "TRP-013",
-      source: "Pune",
-      destination: "Kolhapur",
-      vehicleId: v3.id, driverId: d3.id, createdById: dispatcher.id,
-      cargoWeightKg: 700, plannedDistanceKm: 228,
-      actualDistanceKm: 235, revenue: 18000, status: "COMPLETED",
-      createdAt: daysAgo(10),
-      dispatchedAt: daysAgo(10), completedAt: daysAgo(9),
-    },
-    // DISPATCHED — v1 and d1 are ON_TRIP
-    {
-      code: "TRP-014",
-      source: "Delhi",
-      destination: "Jaipur",
-      vehicleId: v1.id, driverId: d1.id, createdById: dispatcher.id,
-      cargoWeightKg: 600, plannedDistanceKm: 285,
-      status: "DISPATCHED",
-      createdAt: daysAgo(1),
-      dispatchedAt: daysAgo(1),
-    },
-    // DRAFT
-    {
-      code: "TRP-015",
-      source: "Ahmedabad",
-      destination: "Rajkot",
-      vehicleId: v3.id, driverId: d3.id, createdById: dispatcher.id,
-      cargoWeightKg: 750, plannedDistanceKm: 218,
-      status: "DRAFT",
-      createdAt: daysAgo(0),
-    },
-  ];
+  // Fix vehicle/driver statuses for the first 3 ON_TRIP ones
+  for (let i = 5; i < 8; i++) { // These are some of the DISPATCHED trips
+    await prisma.vehicle.update({ where: { id: trips[i].vehicleId }, data: { status: "ON_TRIP" } });
+    await prisma.driver.update({ where: { id: trips[i].driverId }, data: { status: "ON_TRIP" } });
+  }
 
-  const createdTrips = await Promise.all(
-    tripSeeds.map((seed) =>
-      prisma.trip.create({ data: seed })
-    )
-  );
+  // 5. Fuel & Expenses
+  for (let i = 0; i < 50; i++) {
+    const v = randomChoice(vehicles);
+    await prisma.fuelLog.create({
+      data: {
+        vehicleId: v.id,
+        date: daysAgo(randomInt(1, 60)),
+        liters: randomInt(30, 150),
+        costPerLiter: randomInt(90, 110),
+        totalCost: randomInt(3000, 15000),
+        odometerAtFill: Number(v.odometer) - randomInt(100, 5000)
+      }
+    });
 
-  const trip0 = createdTrips[0]; // for fuel log linking
-  const trip1 = createdTrips[5]; // TRP-006 (completed, Mumbai→Pune)
-  const trip13 = createdTrips[13]; // TRP-014 (DISPATCHED)
+    await prisma.expense.create({
+      data: {
+        vehicleId: v.id,
+        category: randomChoice(["TOLL", "PARKING", "REPAIR", "OTHER"]),
+        amount: randomInt(200, 2000),
+        date: daysAgo(randomInt(1, 60)),
+        description: "Routine expense"
+      }
+    });
+  }
+  console.log("✅ Fuel & Expenses seeded (100)");
 
-  console.log(`✅ Trips seeded (${tripSeeds.length})`);
+  // 6. Maintenance Logs
+  for (let i = 0; i < 20; i++) {
+    const v = randomChoice(vehicles);
+    const status = i % 5 === 0 ? "IN_PROGRESS" : "COMPLETED";
+    await prisma.maintenanceLog.create({
+      data: {
+        vehicleId: v.id,
+        scheduledDate: daysAgo(randomInt(1, 150)),
+        completedDate: status === "COMPLETED" ? daysAgo(randomInt(0, 149)) : null,
+        serviceType: randomChoice(["OIL_CHANGE", "TIRE_REPLACEMENT", "GENERAL_INSPECTION", "OTHER"]),
+        description: randomChoice(["Oil Change", "Brake Pad Replacement", "Annual Inspection", "Tire Rotation"]),
+        cost: randomInt(500, 5000),
+        status: status
+      }
+    });
+  }
+  console.log("✅ Maintenance Logs seeded (20)");
 
-  // ─── MAINTENANCE ─────────────────────────────────────────
-  await Promise.all([
-    // IN_PROGRESS on v2 (IN_SHOP) — matches vehicle status above
-    prisma.maintenanceLog.create({
-      data: {
-        vehicleId: v2.id,
-        serviceType: "ENGINE_REPAIR",
-        description: "Major engine overhaul after 120,000 km service interval",
-        cost: 85000,
-        status: "IN_PROGRESS",
-        scheduledDate: daysAgo(2),
-      },
-    }),
-    // COMPLETED on v0
-    prisma.maintenanceLog.create({
-      data: {
-        vehicleId: v0.id,
-        serviceType: "OIL_CHANGE",
-        description: "Routine 5000 km oil change",
-        cost: 3500,
-        status: "COMPLETED",
-        scheduledDate: daysAgo(20),
-        completedDate: daysAgo(19),
-      },
-    }),
-    // COMPLETED on v4
-    prisma.maintenanceLog.create({
-      data: {
-        vehicleId: v4.id,
-        serviceType: "TIRE_REPLACEMENT",
-        description: "All 6 tyres replaced — 60,000 km wear",
-        cost: 62000,
-        status: "COMPLETED",
-        scheduledDate: monthsAgo(2),
-        completedDate: monthsAgo(2),
-      },
-    }),
-    // SCHEDULED on v3
-    prisma.maintenanceLog.create({
-      data: {
-        vehicleId: v3.id,
-        serviceType: "BRAKE_SERVICE",
-        description: "Scheduled brake pad and fluid replacement",
-        cost: 8500,
-        status: "SCHEDULED",
-        scheduledDate: daysAgo(-3), // 3 days from now
-      },
-    }),
-  ]);
-
-  console.log("✅ Maintenance logs seeded (4)");
-
-  // ─── FUEL LOGS ───────────────────────────────────────────
-  await Promise.all([
-    prisma.fuelLog.create({
-      data: {
-        vehicleId: v0.id,
-        tripId: trip0.id,
-        date: monthsAgo(5),
-        liters: 82.5,
-        costPerLiter: 94.5,
-        totalCost: 82.5 * 94.5,
-        odometerAtFill: 44200,
-      },
-    }),
-    prisma.fuelLog.create({
-      data: {
-        vehicleId: v0.id,
-        tripId: trip1.id,
-        date: monthsAgo(3),
-        liters: 28.5,
-        costPerLiter: 96.5,
-        totalCost: 28.5 * 96.5,
-        odometerAtFill: 45050,
-      },
-    }),
-    prisma.fuelLog.create({
-      data: {
-        vehicleId: v1.id,
-        tripId: trip13.id,
-        date: daysAgo(1),
-        liters: 42,
-        costPerLiter: 94.8,
-        totalCost: 42 * 94.8,
-        odometerAtFill: 87800,
-      },
-    }),
-    prisma.fuelLog.create({
-      data: {
-        vehicleId: v4.id,
-        date: monthsAgo(1),
-        liters: 155,
-        costPerLiter: 97.2,
-        totalCost: 155 * 97.2,
-        odometerAtFill: 309500,
-      },
-    }),
-    prisma.fuelLog.create({
-      data: {
-        vehicleId: v3.id,
-        date: monthsAgo(2),
-        liters: 35.5,
-        costPerLiter: 95.0,
-        totalCost: 35.5 * 95.0,
-        odometerAtFill: 22100,
-      },
-    }),
-  ]);
-
-  console.log("✅ Fuel logs seeded (5)");
-
-  // ─── EXPENSES ────────────────────────────────────────────
-  await Promise.all([
-    prisma.expense.create({
-      data: {
-        vehicleId: v0.id,
-        tripId: trip1.id,
-        category: "TOLL",
-        description: "Mumbai-Pune expressway toll",
-        amount: 285,
-        date: monthsAgo(3),
-      },
-    }),
-    prisma.expense.create({
-      data: {
-        vehicleId: v0.id,
-        category: "INSURANCE",
-        description: "Annual comprehensive insurance renewal",
-        amount: 42000,
-        date: monthsAgo(4),
-      },
-    }),
-    prisma.expense.create({
-      data: {
-        vehicleId: v4.id,
-        category: "INSURANCE",
-        description: "Annual comprehensive insurance — Volvo trailer",
-        amount: 68000,
-        date: monthsAgo(4),
-      },
-    }),
-    prisma.expense.create({
-      data: {
-        vehicleId: v1.id,
-        tripId: trip13.id,
-        category: "TOLL",
-        description: "Delhi-Jaipur NH-48 toll",
-        amount: 420,
-        date: daysAgo(1),
-      },
-    }),
-    prisma.expense.create({
-      data: {
-        vehicleId: v3.id,
-        category: "PARKING",
-        description: "Overnight parking — Surat depot",
-        amount: 800,
-        date: monthsAgo(1),
-      },
-    }),
-    prisma.expense.create({
-      data: {
-        vehicleId: v2.id,
-        category: "REPAIR",
-        description: "Emergency roadside tyre puncture repair",
-        amount: 2200,
-        date: monthsAgo(3),
-      },
-    }),
-  ]);
-
-  console.log("✅ Expenses seeded (6)");
-
-  console.log("\n🎉 Seed complete! Login credentials:");
-  console.log("   Fleet Manager: manager@transitops.com / Manager@123");
-  console.log("   Dispatcher:    dispatcher@transitops.com / Dispatcher@123");
-  console.log("   Admin:         admin@transitops.com / Admin@123");
-  console.log("\n📊 Dashboard summary:");
-  console.log("   • 5 vehicles (1 ON_TRIP, 1 IN_SHOP, 3 AVAILABLE)");
-  console.log("   • 5 drivers (1 ON_TRIP, 1 OFF_DUTY, 1 expired license, 2 AVAILABLE)");
-  console.log(`   • ${tripSeeds.length} trips across 5 months (for chart data)`);
-  console.log("   • 4 maintenance logs, 5 fuel logs, 6 expenses");
+  console.log("✨ Seeding completed successfully!");
 }
 
 main()
-  .catch((e: unknown) => {
-    console.error("❌ Seed failed:", e);
+  .catch((e) => {
+    console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

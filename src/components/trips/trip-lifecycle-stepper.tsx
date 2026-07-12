@@ -1,5 +1,5 @@
 import { CheckCircle, Circle, XCircle } from "lucide-react";
-import type { TripStatus } from "@prisma/client";
+import type { TripStatus } from "@/lib/constants";
 
 const STEPS = [
   { key: "DRAFT", label: "Draft" },

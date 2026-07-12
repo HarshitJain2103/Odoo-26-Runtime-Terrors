@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import {
   Plus, Search, Filter, RefreshCw, Send, CheckCircle, XCircle,
 } from "lucide-react";
-import type { TripStatus } from "@prisma/client";
+import type { TripStatus } from "@/lib/constants";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
