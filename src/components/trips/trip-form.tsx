@@ -38,7 +38,7 @@ export function TripForm({ onClose, onSuccess }: TripFormProps) {
     sourceLng: undefined as number | undefined,
     destLat: undefined as number | undefined,
     destLng: undefined as number | undefined,
-    routeGeoJson: null as any,
+    routeGeoJson: null as unknown,
     vehicleId: "",
     driverId: "",
     cargoWeightKg: "",

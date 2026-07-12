@@ -21,6 +21,7 @@ interface LiveTrip {
   sourceLng: number;
   destLat: number;
   destLng: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   routeGeoJson: any;
   cargoWeightKg: number;
   vehicle: { regNo: string; name: string };
@@ -49,6 +50,7 @@ export default function LiveMapClient() {
 
   // Setup Leaflet icons on the client
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (L.Icon.Default.prototype as any)._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: iconRetinaUrl,

@@ -118,7 +118,7 @@ export function DashboardPage({ userName, userRole }: { userName: string; userRo
           <p className="text-sm font-medium mb-1" style={{ color: "rgba(255,255,255,0.6)" }}>{userRole}</p>
           <h2 className="text-2xl font-bold text-white mb-1">Welcome back, {firstName} 👋</h2>
           <p style={{ color: "rgba(255,255,255,0.5)" }} className="text-sm">
-            Here's your fleet overview for today.
+            {"Here's"} your fleet overview for today.
           </p>
         </div>
         <div className="absolute -right-6 -top-6 w-36 h-36 rounded-full opacity-10" style={{ background: "white" }} />

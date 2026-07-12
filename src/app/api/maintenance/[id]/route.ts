@@ -3,8 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-// Tx type derived from prisma instance — avoids Prisma namespace import issues
-type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+import type { Prisma } from "@prisma/client";
+
+type Tx = Prisma.TransactionClient;
 
 const updateStatusSchema = z.object({
   status: z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED"]),
