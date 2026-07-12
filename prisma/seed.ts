@@ -21,6 +21,7 @@ async function main(): Promise<void> {
 
   // ─── CLEAN SLATE (delete in FK-safe order) ────────────────
   console.log("🧹 Clearing existing data...");
+  await prisma.auditLog.deleteMany();
   await prisma.expense.deleteMany();
   await prisma.fuelLog.deleteMany();
   await prisma.maintenanceLog.deleteMany();

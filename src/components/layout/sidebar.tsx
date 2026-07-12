@@ -37,48 +37,61 @@ type IconName = keyof typeof ICON_MAP;
 export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const role = (session?.user as { role?: UserRole } | undefined)?.role;
   const userName = session?.user?.name ?? "";
   const userEmail = session?.user?.email ?? "";
 
   return (
-    <aside
-      className={cn(
-        "flex flex-col h-screen sticky top-0 transition-all duration-300 ease-in-out flex-shrink-0",
-        collapsed ? "w-16" : "w-60"
+    <>
+      {!collapsed && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" 
+          onClick={() => setCollapsed(true)} 
+        />
       )}
-      style={{ background: "var(--color-sidebar)" }}
-    >
-      {/* Logo */}
-      <div
+      <aside
         className={cn(
-          "flex items-center gap-3 px-4 py-5 border-b",
-          collapsed && "justify-center px-2"
+          "flex flex-col h-screen fixed top-0 left-0 z-50 transition-all duration-300 ease-in-out flex-shrink-0",
+          collapsed ? "w-16" : "w-60"
         )}
-        style={{ borderColor: "rgba(255,255,255,0.08)" }}
+        style={{ background: "var(--color-sidebar)" }}
       >
+        {/* Logo */}
         <div
-          className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, #714b67, #00a09d)" }}
+          className={cn(
+            "flex items-center gap-3 px-4 py-5 border-b cursor-pointer group",
+            collapsed && "justify-center px-2"
+          )}
+          style={{ borderColor: "rgba(255,255,255,0.08)" }}
+          onClick={() => setCollapsed(!collapsed)}
         >
-          <Truck size={16} color="white" strokeWidth={2.5} />
-        </div>
-        {!collapsed && (
-          <div className="min-w-0">
-            <p className="text-white font-semibold text-sm leading-tight truncate">
-              TransitOps
-            </p>
-            <p className="text-xs leading-tight truncate" style={{ color: "rgba(255,255,255,0.4)" }}>
-              Smart Transport
-            </p>
+          <div
+            className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center relative overflow-hidden"
+            style={{ background: "linear-gradient(135deg, #714b67, #00a09d)" }}
+          >
+            <div className="absolute inset-0 flex items-center justify-center transition-opacity group-hover:opacity-0">
+              <Truck size={16} color="white" strokeWidth={2.5} />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+              {collapsed ? <ChevronRight size={16} color="white" strokeWidth={2.5} /> : <ChevronLeft size={16} color="white" strokeWidth={2.5} />}
+            </div>
           </div>
-        )}
-      </div>
+          {!collapsed && (
+            <div className="min-w-0 transition-opacity group-hover:opacity-80">
+              <p className="text-white font-semibold text-sm leading-tight truncate">
+                TransitOps
+              </p>
+              <p className="text-xs leading-tight truncate" style={{ color: "rgba(255,255,255,0.4)" }}>
+                Smart Transport
+              </p>
+            </div>
+          )}
+        </div>
 
       {/* Nav items */}
-      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-2 py-4 space-y-0.5">
         {NAV_ITEMS.map((item) => {
           const IconComponent = ICON_MAP[item.icon as IconName];
           const isActive = pathname.startsWith(item.href);
@@ -128,13 +141,13 @@ export function Sidebar() {
 
       {/* User info */}
       <div
-        className="border-t p-3"
+        className={cn("border-t", collapsed ? "p-2" : "p-3")}
         style={{ borderColor: "rgba(255,255,255,0.08)" }}
       >
         <div
           className={cn(
-            "flex items-center gap-2.5 rounded-lg p-2",
-            collapsed && "justify-center"
+            "flex items-center rounded-lg",
+            collapsed ? "justify-center p-1" : "gap-2.5 p-2"
           )}
         >
           <div
@@ -156,21 +169,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className={cn(
-          "absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center shadow-md transition-colors z-10",
-        )}
-        style={{ background: "#2d2845", border: "1px solid rgba(255,255,255,0.12)" }}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {collapsed ? (
-          <ChevronRight size={12} color="white" />
-        ) : (
-          <ChevronLeft size={12} color="white" />
-        )}
-      </button>
     </aside>
+    </>
   );
 }
