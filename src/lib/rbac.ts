@@ -1,4 +1,4 @@
-import type { UserRole } from "@prisma/client";
+import type { UserRole } from "./constants";
 import { RBAC_MATRIX, type AccessLevel } from "@/lib/constants";
 
 /**

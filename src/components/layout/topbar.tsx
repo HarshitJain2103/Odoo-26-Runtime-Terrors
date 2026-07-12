@@ -4,8 +4,7 @@ import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { LogOut, Bell } from "lucide-react";
 import { getInitials } from "@/lib/utils";
-import { NAV_ITEMS, ROLE_LABELS } from "@/lib/constants";
-import type { UserRole } from "@prisma/client";
+import { NAV_ITEMS, ROLE_LABELS, type UserRole } from "@/lib/constants";
 
 interface TopbarProps {
   userName: string;

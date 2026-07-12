@@ -1,10 +1,9 @@
-import type {
-  VehicleStatus,
-  DriverStatus,
-  TripStatus,
-  MaintenanceStatus,
-  UserRole,
-} from "@prisma/client";
+// Prisma Enums defined inline to avoid TS namespace/export errors
+export type UserRole = "ADMIN" | "FLEET_MANAGER" | "DISPATCHER" | "SAFETY_OFFICER" | "FINANCIAL_ANALYST";
+export type VehicleStatus = "AVAILABLE" | "ON_TRIP" | "IN_SHOP" | "RETIRED";
+export type DriverStatus = "AVAILABLE" | "ON_TRIP" | "OFF_DUTY" | "SUSPENDED";
+export type TripStatus = "DRAFT" | "DISPATCHED" | "COMPLETED" | "CANCELLED";
+export type MaintenanceStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED";
 
 // ─────────────────────────────────────────────
 // STATUS COLORS

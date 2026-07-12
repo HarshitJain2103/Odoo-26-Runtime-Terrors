@@ -10,7 +10,7 @@ import type {
   DriverStatus,
   TripStatus,
   MaintenanceStatus,
-} from "@prisma/client";
+} from "@/lib/constants";
 
 type StatusConfig = {
   label: string;

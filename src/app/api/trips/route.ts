@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createTripSchema } from "@/lib/validations";
 import { generateTripCode } from "@/lib/utils";
-import type { TripStatus } from "@prisma/client";
+import type { TripStatus } from "@/lib/constants";
 
 // GET /api/trips?status=&vehicleId=&driverId=&sort=&order=
 export async function GET(req: NextRequest) {
