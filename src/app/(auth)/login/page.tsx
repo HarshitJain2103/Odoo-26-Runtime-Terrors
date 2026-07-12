@@ -247,20 +247,46 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo credentials hint */}
+          {/* Demo credentials — all roles */}
           <div
-            className="mt-6 rounded-lg px-4 py-3 text-xs"
-            style={{
-              background: "#f5f0f4",
-              border: "1px solid #e8dde5",
-              color: "#5a3a52",
-            }}
+            className="mt-6 rounded-xl text-xs overflow-hidden"
+            style={{ border: "1px solid #e8dde5" }}
           >
-            <p className="font-semibold mb-1">Demo Credentials</p>
-            <p>admin@transitops.com / Admin@123</p>
-            <p className="text-gray-400 mt-0.5">
-              (Run <code className="bg-white px-1 rounded">npm run db:seed</code> first)
-            </p>
+            <div
+              className="px-4 py-2.5 font-semibold text-sm flex items-center justify-between"
+              style={{ background: "#f5f0f4", color: "#5a3a52", borderBottom: "1px solid #e8dde5" }}
+            >
+              <span>Demo Credentials</span>
+              <span className="text-xs font-normal text-gray-400">click to fill</span>
+            </div>
+            {(
+              [
+                { role: "Admin",             email: "admin@transitops.com",      pwd: "Admin@123",      badge: "#714b67", bg: "#f5f0f4" },
+                { role: "Fleet Manager",     email: "manager@transitops.com",    pwd: "Manager@123",    badge: "#2563eb", bg: "#eff6ff" },
+                { role: "Dispatcher",        email: "dispatcher@transitops.com", pwd: "Dispatcher@123", badge: "#d97706", bg: "#fef3c7" },
+                { role: "Safety Officer",    email: "safety@transitops.com",     pwd: "Safety@123",     badge: "#16a34a", bg: "#f0fdf4" },
+                { role: "Financial Analyst", email: "analyst@transitops.com",    pwd: "Analyst@123",    badge: "#0891b2", bg: "#f0f9ff" },
+              ] as { role: string; email: string; pwd: string; badge: string; bg: string }[]
+            ).map((cred, i, arr) => (
+              <button
+                key={cred.email}
+                type="button"
+                onClick={() => { setEmail(cred.email); setPassword(cred.pwd); setError(""); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:opacity-80"
+                style={{
+                  background: "white",
+                  borderBottom: i < arr.length - 1 ? "1px solid #f1f5f9" : undefined,
+                }}
+              >
+                <span
+                  className="text-white text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 w-28 text-center"
+                  style={{ background: cred.badge }}
+                >
+                  {cred.role}
+                </span>
+                <span className="text-gray-500 font-mono truncate">{cred.email}</span>
+              </button>
+            ))}
           </div>
         </div>
 

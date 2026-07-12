@@ -30,10 +30,12 @@ async function main(): Promise<void> {
   await prisma.user.deleteMany();
 
   // ─── USERS ───────────────────────────────────────────────
-  const [adminHash, managerHash, dispatcherHash] = await Promise.all([
+  const [adminHash, managerHash, dispatcherHash, safetyHash, analystHash] = await Promise.all([
     bcrypt.hash("Admin@123", 12),
     bcrypt.hash("Manager@123", 12),
     bcrypt.hash("Dispatcher@123", 12),
+    bcrypt.hash("Safety@123", 12),
+    bcrypt.hash("Analyst@123", 12),
   ]);
 
   const [admin, manager, dispatcher] = await Promise.all([
@@ -61,13 +63,30 @@ async function main(): Promise<void> {
         role: "DISPATCHER",
       },
     }),
+    prisma.user.create({
+      data: {
+        name: "Safety Officer",
+        email: "safety@transitops.com",
+        passwordHash: safetyHash,
+        role: "SAFETY_OFFICER",
+      },
+    }),
+    prisma.user.create({
+      data: {
+        name: "Financial Analyst",
+        email: "analyst@transitops.com",
+        passwordHash: analystHash,
+        role: "FINANCIAL_ANALYST",
+      },
+    }),
   ]);
 
-  // Keep admin/manager in scope for audit log etc. later if needed
+  // Keep admin/manager/dispatcher in scope for audit log etc. later if needed
   void admin;
   void manager;
+  void dispatcher;
 
-  console.log("✅ Users seeded (3)");
+  console.log("✅ Users seeded (5)");
 
   // ─── VEHICLES ────────────────────────────────────────────
   // v[1] = ON_TRIP (matched to DISPATCHED trip below)
